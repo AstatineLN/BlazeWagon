@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">BlazeWagon</string>
+
+    <string name="status_initializing">Status: Initializing...</string>
+    <string name="gps_waiting_for_location">GPS: Waiting for location...</string>
+    <string name="emergency_stop">EMERGENCY STOP</string>
+</resources>
