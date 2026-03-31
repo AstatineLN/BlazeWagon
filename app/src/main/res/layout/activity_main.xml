@@ -35,6 +35,62 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/statusTextView" />
 
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/modeToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:checked="true"
+        android:text="Following Mode"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/gpsTextView" />
+
+    <SeekBar
+        android:id="@+id/speedSeekBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:max="100"
+        android:progress="45"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/modeToggle" />
+
+    <TextView
+        android:id="@+id/speedValueText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Manual Power: 45%"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/speedSeekBar" />
+
+    <GridLayout
+        android:id="@+id/controlGrid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:columnCount="3"
+        android:rowCount="3"
+        app:layout_constraintBottom_toTopOf="@+id/stopButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/speedValueText">
+
+        <View android:layout_width="60dp" android:layout_height="60dp" />
+        <Button android:id="@+id/btnForward" android:layout_width="80dp" android:layout_height="80dp" android:text="↑" />
+        <View android:layout_width="60dp" android:layout_height="60dp" />
+
+        <Button android:id="@+id/btnLeft" android:layout_width="80dp" android:layout_height="80dp" android:text="←" />
+        <Button android:id="@+id/btnHalt" android:layout_width="80dp" android:layout_height="80dp" android:text="STOP" />
+        <Button android:id="@+id/btnRight" android:layout_width="80dp" android:layout_height="80dp" android:text="→" />
+
+        <View android:layout_width="60dp" android:layout_height="60dp" />
+        <Button android:id="@+id/btnBack" android:layout_width="80dp" android:layout_height="80dp" android:text="↓" />
+        <View android:layout_width="60dp" android:layout_height="60dp" />
+    </GridLayout>
     <!-- 3. Emergency Stop Button -->
     <Button
         android:id="@+id/stopButton"

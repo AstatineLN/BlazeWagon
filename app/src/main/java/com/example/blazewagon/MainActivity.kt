@@ -28,6 +28,7 @@ import java.io.IOException
 import java.io.OutputStream
 import java.util.*
 import kotlin.concurrent.thread
+import android.widget.SeekBar
 
 // Unique UUID for serial port service (standard SPP profile)
 private val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")
@@ -54,6 +55,19 @@ class MainActivity : AppCompatActivity() {
     private lateinit var locationRequest: LocationRequest
     private lateinit var locationCallback: LocationCallback
 
+    // Manual Mode
+    private lateinit var modeToggle: androidx.appcompat.widget.SwitchCompat
+    private lateinit var speedSeekBar: SeekBar
+    private lateinit var speedValueText: TextView
+    private lateinit var btnForward: Button
+    private lateinit var btnBack: Button
+    private lateinit var btnLeft: Button
+    private lateinit var btnRight: Button
+    private lateinit var btnHalt: Button
+
+    private var isAutonomousMode = true
+    private var currentManualPower = 45 // Default speed
+
     // Bluetooth Input Stream (for receiving RESET confirmation)
     private var isBluetoothThreadRunning = false
 
@@ -67,7 +81,66 @@ class MainActivity : AppCompatActivity() {
         statusTextView = findViewById(R.id.statusTextView)
         gpsTextView = findViewById(R.id.gpsTextView)
         stopButton = findViewById(R.id.stopButton)
+        // Initialize new UI elements
+        modeToggle = findViewById(R.id.modeToggle)
+        speedSeekBar = findViewById(R.id.speedSeekBar)
+        speedValueText = findViewById(R.id.speedValueText)
+        btnForward = findViewById(R.id.btnForward)
+        btnBack = findViewById(R.id.btnBack)
+        btnLeft = findViewById(R.id.btnLeft)
+        btnRight = findViewById(R.id.btnRight)
+        btnHalt = findViewById(R.id.btnHalt)
+        // 1. Toggle between Following and Manual
+        modeToggle.setOnCheckedChangeListener { _, isChecked ->
+            isAutonomousMode = isChecked
+            if (isChecked) {
+                sendCommand("MODE:AUTO")
+            } else {
+                sendCommand("MODE:MANUAL")
+                sendCommand("HALT") // Stop immediately when switching to manual for safety
+            }
+        }
 
+// 2. Slider for Power/Speed (crucial for handling wagon load)
+        speedSeekBar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                currentManualPower = progress
+                speedValueText.text = "Manual Power: $currentManualPower%"
+            }
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+        })
+// 3. Movement Listener (Press to Move, Release to Stop)
+        @SuppressLint("ClickableViewAccessibility")
+        val moveListener = android.view.View.OnTouchListener { view, event ->
+            if (isAutonomousMode) return@OnTouchListener false // Ignore manual buttons in Auto mode
+
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    val command = when (view.id) {
+                        R.id.btnForward -> "FORWARD:$currentManualPower"
+                        R.id.btnBack -> "BACKWARD:$currentManualPower"
+                        R.id.btnLeft -> "LEFT:$currentManualPower"
+                        R.id.btnRight -> "RIGHT:$currentManualPower"
+                        else -> "HALT"
+                    }
+                    sendCommand(command)
+                }
+                android.view.MotionEvent.ACTION_UP -> {
+                    sendCommand("HALT") // Stop immediately when finger is lifted
+                }
+            }
+            true
+        }
+
+        // Assign the listener to the buttons
+        btnForward.setOnTouchListener(moveListener)
+        btnBack.setOnTouchListener(moveListener)
+        btnLeft.setOnTouchListener(moveListener)
+        btnRight.setOnTouchListener(moveListener)
+
+        // Simple click for the center Halt button
+        btnHalt.setOnClickListener { sendCommand("HALT") }
         // Initialize Location clients
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         setupLocationCallback()
@@ -154,12 +227,20 @@ class MainActivity : AppCompatActivity() {
 
     // Processes commands received FROM the ESP32
     private fun receiveCommand(command: String) {
-        if (command == "RESET_OK") {
-            // This would be the confirmation from the ESP32 after a physical button press
-            setStoppedState(false)
-            Toast.makeText(this, "System Reset Confirmed by ESP32", Toast.LENGTH_SHORT).show()
+        when {
+            command == "RESET_OK" -> {
+                setStoppedState(false)
+                Toast.makeText(this, "System Reset Confirmed", Toast.LENGTH_SHORT).show()
+            }
+            command == "CONFIRM:AUTO" -> {
+                statusTextView.text = "Status: Autonomous Following"
+                statusTextView.setTextColor(Color.BLUE)
+            }
+            command == "CONFIRM:MANUAL" -> {
+                statusTextView.text = "Status: Manual Control Active"
+                statusTextView.setTextColor(Color.parseColor("#FFA500")) // Orange
+            }
         }
-        // Add other received command handling here
     }
 
     // --- BLUETOOTH CONNECTION AND SEND LOGIC (REST OF THE FILE REMAINS SIMILAR) ---
@@ -322,6 +403,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendGpsData(location: Location) {
+        // Only send if in Auto mode AND not emergency stopped
+        if (!isAutonomousMode || isStopped) return
+
         val lat = String.format("%.6f", location.latitude)
         val lon = String.format("%.6f", location.longitude)
         val speed = String.format("%.2f", location.speed)
