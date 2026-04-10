@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:background="#FAFAFA">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⚠️ SAFETY WARNING ⚠️"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#D32F2F"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Place the wagon in a wide open space OUTDOORS.\n\nRemove any loose items. The wagon will spin rapidly in place. Keep hands and feet clear."
+        android:textSize="18sp"
+        android:textAlignment="center"
+        android:textColor="#333333"
+        android:layout_marginBottom="32dp"/>
+
+    <TextView
+        android:id="@+id/tvCalibrationStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Status: Waiting for user confirmation..."
+        android:textSize="18sp"
+        android:textStyle="italic"
+        android:textColor="#555555"
+        android:layout_marginBottom="24dp"/>
+
+    <TextView
+        android:id="@+id/tvCountdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="5"
+        android:textSize="100sp"
+        android:textStyle="bold"
+        android:textColor="#1976D2"
+        android:visibility="invisible"
+        android:layout_marginBottom="32dp"/>
+
+    <Button
+        android:id="@+id/btnStartCalibration"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:text="AGREE &amp; START SPIN"
+        android:textSize="20sp"
+        android:backgroundTint="#4CAF50"
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/btnEmergencyStop"
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:text="EMERGENCY STOP"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:backgroundTint="#D32F2F"
+        android:textColor="#FFFFFF"/>
+
+</LinearLayout>

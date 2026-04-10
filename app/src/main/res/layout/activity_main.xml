@@ -35,17 +35,27 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/statusTextView" />
 
+    <!-- Calibration Button -->
+    <!-- -->
+
+    <Button
+        android:id="@+id/btnOpenCalibration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#2196F3"
+        android:text="Calibrate Compass"
+        tools:layout_editor_absoluteX="2dp"
+        tools:layout_editor_absoluteY="169dp" />
+
     <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/modeToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:checked="true"
         android:text="Following Mode"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/gpsTextView" />
+        tools:layout_editor_absoluteX="359dp"
+        tools:layout_editor_absoluteY="185dp" />
 
     <SeekBar
         android:id="@+id/speedSeekBar"
@@ -96,13 +106,14 @@
         android:id="@+id/stopButton"
         android:layout_width="0dp"
         android:layout_height="100dp"
-        android:text="@string/emergency_stop"
+        android:layout_marginBottom="36dp"
         android:backgroundTint="@android:color/holo_red_dark"
+        android:text="@string/emergency_stop"
         android:textColor="@android:color/white"
         android:textSize="20sp"
-        android:layout_marginBottom="50dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
