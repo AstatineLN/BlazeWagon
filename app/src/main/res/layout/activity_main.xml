@@ -42,21 +42,24 @@
         android:id="@+id/btnOpenCalibration"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:backgroundTint="#2196F3"
         android:text="Calibrate Compass"
-        tools:layout_editor_absoluteX="2dp"
-        tools:layout_editor_absoluteY="169dp" />
+        app:layout_constraintEnd_toStartOf="@+id/modeToggle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/gpsTextView" />
 
     <androidx.appcompat.widget.SwitchCompat
-
         android:id="@+id/modeToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:checked="true"
         android:text="Following Mode"
         android:textSize="18sp"
-        tools:layout_editor_absoluteX="183dp"
-        tools:layout_editor_absoluteY="174dp" />
+        app:layout_constraintBottom_toBottomOf="@+id/btnOpenCalibration"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btnOpenCalibration"
+        app:layout_constraintTop_toTopOf="@+id/btnOpenCalibration" />
 
     <SeekBar
         android:id="@+id/speedSeekBar"
