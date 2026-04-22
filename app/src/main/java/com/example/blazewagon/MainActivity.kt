@@ -17,7 +17,9 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.widget.Button
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,7 +30,6 @@ import java.io.IOException
 import java.io.OutputStream
 import java.util.*
 import kotlin.concurrent.thread
-import android.widget.SeekBar
 
 // Unique UUID for serial port service (standard SPP profile)
 private val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")
@@ -41,6 +42,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusTextView: TextView
     private lateinit var gpsTextView: TextView
     private lateinit var stopButton: Button
+
+    // --- NEW UI VARIABLES ---
+    private lateinit var btnOpenCalibration: Button
+    private var calibrationDialog: android.app.AlertDialog? = null
+    private var tvCalStatus: TextView? = null
+    private var tvCalCountdown: TextView? = null
+    private var isCalibrating = false
 
     // System State Tracker
     private var isStopped = false
@@ -81,7 +89,6 @@ class MainActivity : AppCompatActivity() {
         statusTextView = findViewById(R.id.statusTextView)
         gpsTextView = findViewById(R.id.gpsTextView)
         stopButton = findViewById(R.id.stopButton)
-        // Initialize new UI elements
         modeToggle = findViewById(R.id.modeToggle)
         speedSeekBar = findViewById(R.id.speedSeekBar)
         speedValueText = findViewById(R.id.speedValueText)
@@ -90,6 +97,13 @@ class MainActivity : AppCompatActivity() {
         btnLeft = findViewById(R.id.btnLeft)
         btnRight = findViewById(R.id.btnRight)
         btnHalt = findViewById(R.id.btnHalt)
+
+        // --- INITIALIZE CALIBRATION BUTTON ---
+        btnOpenCalibration = findViewById(R.id.btnOpenCalibration)
+        btnOpenCalibration.setOnClickListener {
+            showCalibrationDialog()
+        }
+
         // 1. Toggle between Following and Manual
         modeToggle.setOnCheckedChangeListener { _, isChecked ->
             isAutonomousMode = isChecked
@@ -101,18 +115,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-// 2. Slider for Power/Speed (crucial for handling wagon load)
-        speedSeekBar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+        // 2. Slider for Power/Speed (crucial for handling wagon load)
+        speedSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 currentManualPower = progress
                 speedValueText.text = "Manual Power: $currentManualPower%"
             }
-            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
-// 3. Movement Listener (Press to Move, Release to Stop)
+
+        // 3. Movement Listener (Press to Move, Release to Stop)
         @SuppressLint("ClickableViewAccessibility")
-        val moveListener = android.view.View.OnTouchListener { view, event ->
+        val moveListener = View.OnTouchListener { view, event ->
             if (isAutonomousMode) return@OnTouchListener false // Ignore manual buttons in Auto mode
 
             when (event.action) {
@@ -141,6 +156,7 @@ class MainActivity : AppCompatActivity() {
 
         // Simple click for the center Halt button
         btnHalt.setOnClickListener { sendCommand("HALT") }
+
         // Initialize Location clients
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         setupLocationCallback()
@@ -151,19 +167,15 @@ class MainActivity : AppCompatActivity() {
         // The button now handles both STOP and RESET
         stopButton.setOnClickListener {
             if (!isStopped) {
-                // RUNNING -> STOPPED
                 sendCommand("STOP")
-                setStoppedState(true) // Update UI immediately to STOPPED state
+                setStoppedState(true)
             } else {
-                // STOPPED -> RUNNING (RESET)
                 sendCommand("RESET")
-                // We'll let the receive thread handle the state change if needed,
-                // but for speed, we can reset locally:
                 setStoppedState(false)
             }
         }
 
-        // 1. Request Permissions and start connection process
+        // Request Permissions and start connection process
         requestPermissionsAndConnect()
     }
 
@@ -172,9 +184,54 @@ class MainActivity : AppCompatActivity() {
         closeBluetoothConnection()
     }
 
+    // --- DIALOG LOGIC ---
+    @SuppressLint("SetTextI18n")
+    private fun showCalibrationDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_calibration, null)
+
+        tvCalStatus = dialogView.findViewById(R.id.tvCalibrationStatus)
+        tvCalCountdown = dialogView.findViewById(R.id.tvCountdown)
+        val btnStart = dialogView.findViewById<Button>(R.id.btnStartCalibration)
+        val btnEStop = dialogView.findViewById<Button>(R.id.btnEmergencyStop)
+
+        var countDownTimer: android.os.CountDownTimer? = null
+
+        val builder = android.app.AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Light_NoActionBar_Fullscreen)
+        builder.setView(dialogView)
+        calibrationDialog = builder.create()
+        calibrationDialog?.setCancelable(false) // Force them to use E-Stop to exit
+
+        btnStart.setOnClickListener {
+            btnStart.isEnabled = false
+            tvCalCountdown?.visibility = View.VISIBLE
+            tvCalStatus?.text = "Status: Clear the area!"
+
+            countDownTimer = object : android.os.CountDownTimer(5000, 1000) {
+                override fun onTick(millisUntilFinished: Long) {
+                    tvCalCountdown?.text = ((millisUntilFinished / 1000) + 1).toString()
+                }
+                override fun onFinish() {
+                    tvCalCountdown?.text = "SPIN"
+                    isCalibrating = true
+                    tvCalStatus?.text = "Status: Sending command..."
+                    sendCommand("CALIBRATE") // Triggers the ESP32 sequence
+                }
+            }.start()
+        }
+
+        btnEStop.setOnClickListener {
+            countDownTimer?.cancel()
+            sendCommand("STOP") // Immediately halt the wagon
+            setStoppedState(true) // Update main UI
+            isCalibrating = false
+            calibrationDialog?.dismiss() // Close the dialog
+        }
+
+        calibrationDialog?.show()
+    }
+
     // --- SYSTEM STATE MANAGEMENT ---
 
-    // Updates the button UI and internal state
     @SuppressLint("ResourceAsColor")
     private fun setStoppedState(stopped: Boolean) {
         isStopped = stopped
@@ -193,7 +250,6 @@ class MainActivity : AppCompatActivity() {
 
     // --- BLUETOOTH RECEIVE LOGIC ---
 
-    // Separate thread to listen for data from the ESP32 (e.g., a RESET confirmation)
     @SuppressLint("MissingPermission")
     private fun beginBluetoothListener() {
         if (bluetoothSocket == null || isBluetoothThreadRunning) return
@@ -225,7 +281,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Processes commands received FROM the ESP32
+    // UPDATED to process ALL commands received FROM the ESP32
     private fun receiveCommand(command: String) {
         when {
             command == "RESET_OK" -> {
@@ -240,10 +296,35 @@ class MainActivity : AppCompatActivity() {
                 statusTextView.text = "Status: Manual Control Active"
                 statusTextView.setTextColor(Color.parseColor("#FFA500")) // Orange
             }
+
+            // --- NEW ESP32 STATUS TAGS ---
+            command == "SYS:GPS_SEARCHING" -> {
+                gpsTextView.text = "Wagon GPS: Searching for Satellites (00000)..."
+                gpsTextView.setTextColor(Color.RED)
+            }
+            command == "SYS:GPS_LOCKED" -> {
+                // Return to normal color
+                gpsTextView.setTextColor(Color.BLACK)
+            }
+            command == "SYS:CAL_START" -> {
+                tvCalStatus?.text = "Status: Calibrating magnetic field..."
+                tvCalStatus?.setTextColor(Color.BLUE)
+            }
+            command == "SYS:CAL_DONE" -> {
+                isCalibrating = false
+                tvCalCountdown?.text = "DONE"
+                tvCalStatus?.text = "Status: Calibration Successful!"
+                tvCalStatus?.setTextColor(Color.parseColor("#4CAF50"))
+
+                // Auto-close dialog after 3 seconds of success
+                Handler(Looper.getMainLooper()).postDelayed({
+                    calibrationDialog?.dismiss()
+                }, 3000)
+            }
         }
     }
 
-    // --- BLUETOOTH CONNECTION AND SEND LOGIC (REST OF THE FILE REMAINS SIMILAR) ---
+    // --- BLUETOOTH CONNECTION AND SEND LOGIC ---
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -332,7 +413,6 @@ class MainActivity : AppCompatActivity() {
     private fun sendCommand(command: String) {
         if (outputStream == null) {
             statusTextView.text = "Status: Not Connected"
-            // Toast.makeText(this, "Not connected to ESP32.", Toast.LENGTH_SHORT).show()
             return
         }
         try {

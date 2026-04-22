@@ -48,14 +48,15 @@
         tools:layout_editor_absoluteY="169dp" />
 
     <androidx.appcompat.widget.SwitchCompat
+
         android:id="@+id/modeToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:checked="true"
         android:text="Following Mode"
         android:textSize="18sp"
-        tools:layout_editor_absoluteX="359dp"
-        tools:layout_editor_absoluteY="185dp" />
+        tools:layout_editor_absoluteX="183dp"
+        tools:layout_editor_absoluteY="174dp" />
 
     <SeekBar
         android:id="@+id/speedSeekBar"
@@ -106,7 +107,7 @@
         android:id="@+id/stopButton"
         android:layout_width="0dp"
         android:layout_height="100dp"
-        android:layout_marginBottom="36dp"
+        android:layout_marginBottom="24dp"
         android:backgroundTint="@android:color/holo_red_dark"
         android:text="@string/emergency_stop"
         android:textColor="@android:color/white"
